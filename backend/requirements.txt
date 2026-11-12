@@ -1,0 +1,10 @@
+# 后端运行时依赖，版本按下表实际安装结果锁定（报告 §4.1 技术选型）
+# 安装：pip install -r requirements-dev.txt（在 backend/.venv 内）
+fastapi==0.162.5
+uvicorn==0.54.0
+
+# M1-T1 引入：异步 ORM、驱动、迁移与配置读取
+sqlalchemy[asyncio]==2.0.57
+asyncpg==0.32.0
+alembic==1.20.1
+pydantic-settings==2.15.0

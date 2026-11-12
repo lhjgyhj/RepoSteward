@@ -1,0 +1,6 @@
+# 开发依赖：在运行时依赖之上追加测试与静态检查工具（版本按实际安装锁定）
+# 安装：pip install -r requirements-dev.txt
+-r requirements.txt
+pytest==9.2.0
+httpx==0.28.1
+ruff==0.17.4
