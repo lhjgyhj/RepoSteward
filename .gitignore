@@ -12,3 +12,6 @@ __pycache__/
 # 前端
 node_modules/
 dist/
+
+# IDE
+.idea/

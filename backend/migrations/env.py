@@ -1,5 +1,4 @@
 # Alembic 迁移环境：配置异步引擎、目标元数据与迁移执行方式（报告 §8 核心数据模型的建表通道）
-# TODO(M1-T1): 让迁移能连上数据库并识别项目里的模型
 import asyncio
 from logging.config import fileConfig
 
@@ -9,26 +8,16 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+from app.config import settings
+from app.db import Base
+from app import models  # noqa: F401
+
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-# TODO(M1-T1): 让迁移工具能识别项目里定义的模型
-target_metadata = None
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
@@ -43,7 +32,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = settings.DATABASE_URL
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -67,10 +56,10 @@ async def run_async_migrations() -> None:
     and associate a connection with the context.
 
     """
-
+    configuration = config.get_section(config.config_ini_section, {})
+    configuration["sqlalchemy.url"] = settings.DATABASE_URL
     connectable = async_engine_from_config(
-        # TODO(M1-T1): 让迁移用的连接地址取自项目配置，而不是留空的 ini 值
-        config.get_section(config.config_ini_section, {}),
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
