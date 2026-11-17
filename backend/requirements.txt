@@ -8,3 +8,7 @@ sqlalchemy[asyncio]==2.0.57
 asyncpg==0.32.0
 alembic==1.20.1
 pydantic-settings==2.15.0
+
+# M1-T6 引入：GitHub OAuth 登录（httpx 调 GitHub，itsdangerous 给会话 cookie 签名）
+httpx==0.28.1
+itsdangerous==2.2.0
