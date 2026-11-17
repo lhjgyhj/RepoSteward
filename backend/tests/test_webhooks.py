@@ -21,7 +21,7 @@ def test_invalid_signature_is_not_accepted() -> None:
             "X-GitHub-Event": "issues",
         },
     )
-    assert response.status_code != 202
+    assert response.status_code == 401
 
 
 def test_valid_request_returns_202() -> None:

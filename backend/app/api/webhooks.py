@@ -1,8 +1,14 @@
 # Webhook 接收端点：POST /webhooks/github，验签、入库去重、快速过滤后返回 202（报告 §4.2 第 1~3 步、F2.1~F2.3）
+import json
 
 from fastapi import APIRouter, Header, Request, Response
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
+from app.db import SessionLocal
+from app.models import Event, Repository
 from app.security import verify_github_signature
+from app.services.installations import handle_installation
 
 router = APIRouter()
 
@@ -18,17 +24,43 @@ async def github_webhook(
 
     签名无效必须拒绝，不能返回 202。
     同一 X-GitHub-Delivery 重复到达时仍返回 202，且不得插入第二行。
-    本阶段若仓库行尚不存在（T4 才写入），不要伪造仓库；先把验签与响应走通。
+    没有对应仓库行时不要硬插 Event，避免伪造仓库。
     """
-    # TODO(核心): payload = 等待 request 的原始字节方法（方法名是 body）
     payload = await request.body()
-    # TODO(核心): 若 verify_github_signature(payload, x_hub_signature_256) 为假：
-    #     return Response(status_code=401)
     if verify_github_signature(payload, x_hub_signature_256) is False:
         return Response(status_code=401)
     if not x_github_delivery or not x_github_event:
         return Response(status_code=400)
 
-    # 写入 Event 依赖仓库行，与 T4 一起做。本阶段验签通过即 202。
-    # TODO(核心): 验签已通过且头齐全后：return Response(status_code=202)
+    # 请求体不是合法 JSON 就直接拒绝，不落半条数据
+    try:
+        payload_dict = json.loads(payload)
+    except json.JSONDecodeError:
+        return Response(status_code=400)
+
+    async with SessionLocal() as session:
+        if x_github_event == "installation":
+            await handle_installation(session, payload_dict)
+
+        # installation 事件可能只带 repositories 列表，此时没有 repository 键，跳过 Event
+        github_repo_id = (payload_dict.get("repository") or {}).get("id")
+        if github_repo_id is not None:
+            result = await session.execute(
+                select(Repository).where(Repository.github_repo_id == github_repo_id)
+            )
+            repo = result.scalar_one_or_none()
+            if repo is not None:
+                session.add(Event(
+                    repo_id=repo.id,
+                    delivery_id=x_github_delivery,
+                    type=x_github_event,
+                    payload=payload_dict
+                ))
+
+        # delivery_id 唯一约束冲突视为重复投递：不 500、不插第二行，仍返回 202
+        try:
+            await session.commit()
+        except IntegrityError:
+            await session.rollback()
+
     return Response(status_code=202)
