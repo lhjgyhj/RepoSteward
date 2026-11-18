@@ -1,4 +1,4 @@
-# ORM 模型定义：Installation、Repository、Event 三张首批表（报告 §8 核心数据模型概要）
+# ORM 模型定义：Installation、Repository、Event、Decision、Suggestion 五张表（报告 §8 核心数据模型概要、F5.1）
 
 from datetime import datetime
 
@@ -43,3 +43,26 @@ class Event(Base):
         nullable=False,
         server_default=func.now(),
     )
+
+
+class Decision(Base):
+    __tablename__ = "decisions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), nullable=False)
+    point: Mapped[str] = mapped_column(String, nullable=False)  # 决策点编号，例如 D2
+    backend: Mapped[str] = mapped_column(String, nullable=False)  # rules / deepseek_json / jev
+    answer: Mapped[str] = mapped_column(String, nullable=False)
+    confidence: Mapped[float | None] = mapped_column(nullable=True)
+
+
+class Suggestion(Base):
+    __tablename__ = "suggestions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), nullable=False)
+    action: Mapped[str] = mapped_column(String, nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    mode: Mapped[str] = mapped_column(String, nullable=False)  # shadow / suggest / auto
+    status: Mapped[str] = mapped_column(String, nullable=False)  # pending / accepted / rejected
+    decided_by: Mapped[str | None] = mapped_column(String, nullable=True)

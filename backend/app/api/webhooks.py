@@ -9,6 +9,7 @@ from app.db import SessionLocal
 from app.models import Event, Repository
 from app.security import verify_github_signature
 from app.services.installations import handle_installation
+from app.services.issue_triage import record_issue_triage
 
 router = APIRouter()
 
@@ -43,6 +44,7 @@ async def github_webhook(
             await handle_installation(session, payload_dict)
 
         # installation 事件可能只带 repositories 列表，此时没有 repository 键，跳过 Event
+        event: Event | None = None
         github_repo_id = (payload_dict.get("repository") or {}).get("id")
         if github_repo_id is not None:
             result = await session.execute(
@@ -50,15 +52,23 @@ async def github_webhook(
             )
             repo = result.scalar_one_or_none()
             if repo is not None:
-                session.add(Event(
+                event = Event(
                     repo_id=repo.id,
                     delivery_id=x_github_delivery,
                     type=x_github_event,
                     payload=payload_dict
-                ))
+                )
+                session.add(event)
 
-        # delivery_id 唯一约束冲突视为重复投递：不 500、不插第二行，仍返回 202
+        # delivery_id 唯一约束冲突视为重复投递：不 500、不插第二行，仍返回 202。
+        # flush 放在 try 内，重复投递时在这里就撞唯一约束，不会带着半套数据进 commit
         try:
+            if (
+                event is not None
+                and x_github_event == "issues"
+                and payload_dict.get("action") == "opened"
+            ):
+                await record_issue_triage(session, event, payload_dict)
             await session.commit()
         except IntegrityError:
             await session.rollback()

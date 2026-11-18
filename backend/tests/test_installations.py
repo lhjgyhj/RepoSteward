@@ -11,7 +11,7 @@ from sqlalchemy import delete, func, select
 from app.config import settings
 from app.db import SessionLocal, engine
 from app.main import app
-from app.models import Event, Installation, Repository
+from app.models import Decision, Event, Installation, Repository, Suggestion
 
 # 夹具 id 取明显不可能是真实 GitHub 数据的值，避免撞库
 INSTALLATION_ID = 910000001
@@ -29,12 +29,23 @@ def anyio_backend() -> str:
 
 
 async def _clean_fixtures() -> None:
-    """按外键顺序清掉这批夹具数据：Event → Repository → Installation。"""
+    """按外键顺序清掉这批夹具数据：Suggestion → Decision → Event → Repository → Installation。"""
     async with SessionLocal() as session:
         repo_ids = (
             await session.execute(select(Repository.id).where(Repository.github_repo_id == REPO_ID))
         ).scalars().all()
         if repo_ids:
+            # T3 起 issues/opened 会挂 Decision 与 Suggestion，必须先于 Event 删掉
+            event_ids = (
+                await session.execute(select(Event.id).where(Event.repo_id.in_(repo_ids)))
+            ).scalars().all()
+            if event_ids:
+                await session.execute(
+                    delete(Suggestion).where(Suggestion.event_id.in_(event_ids))
+                )
+                await session.execute(
+                    delete(Decision).where(Decision.event_id.in_(event_ids))
+                )
             await session.execute(delete(Event).where(Event.repo_id.in_(repo_ids)))
         await session.execute(delete(Repository).where(Repository.github_repo_id == REPO_ID))
         await session.execute(

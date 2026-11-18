@@ -4,8 +4,8 @@
 距离下一阶段还差: 能独立看懂 L3 骨架里每一行在干什么；目前 T3/T4 靠 L4 代写才过，T5 卡在看不懂骨架
 
 ## 里程碑
-- [ ] M1:最小可运行流程 — 进行中(骨架已搭好)
-- [ ] M2:分拣与建议 — 未开始
+- [x] M1:最小可运行流程 — 已完成并推送 11a2766；无 AI 关卡已跳过
+- [ ] M2:分拣与建议 — 进行中
 - [ ] M3:MVP 收尾上线 — 未开始
 - [ ] M4:决策后端评测 — 未开始
 - [ ] M5:事务跟进 — 未开始
@@ -19,8 +19,12 @@
 | M1-T2 Webhook 验签 | 已完成 | L3 | 核心自己填,申请过 L3/L2/伪代码 | 4 passed; ruff import 空行已过; 复盘:原文→密钥字节→HMAC-SHA256 十六进制→耗时固定比较 |
 | M1-T3 Webhook 端点 | 已完成 | L4 | 验签段自己填；入库段申请 L4 | 验签+202 已提交 d918b87；Event 落库与 T4 同批未提交 |
 | M1-T4 安装事件 | 已完成待提交 | L4 | 申请 L3 骨架后申请 L4 直接实现 | pytest 8 passed；handle_installation upsert + 测试造 installation 再打 issues 去重 |
-| M1-T5 事件列表 | 已完成待提交 | L4 | 后端伪代码自己打；测试与 Vue 申请直接写入 | GET /api/events 降序；10 passed；App.vue fetch 相对路径；5173 可见 demo-issue-1 |
-| M1-T6 控制台登录 | 未开始 | | | |
+| M1-T5 事件列表 | 已完成并推送 | L4 | 后端伪代码自己打；测试与 Vue 申请直接写入 | 11a2766 |
+| M1-T6 控制台登录 | 已完成并推送 | L4 | 申请直接写入 | 21 passed；未登录 /api/events 401 |
+| M1 无 AI 关卡 | 已跳过 | — | 用户要求跳过 | 2026-11-17 |
+| M2-T1 Decision/Suggestion 表 | 已完成待提交 | L4 | 申请直接写入 | 迁移 f6f2f1006ffd；库已 upgrade |
+| M2-T2 decide rules D2 | 已完成待提交 | L4 | 申请直接写入 | 纯函数；27 passed；非 rules 回不确定 |
+| M2-T3 新 issue 写 Decision/Suggestion | 已完成待提交 | L4 | 申请直接写入 | 30 passed；issues opened 写 D2+pending；重复 delivery 不翻倍 |
 
 ## 薄弱点
 - [ ] 框架术语：SessionLocal、降序、isoformat、ref、代理 —— 需每次配数据示例
